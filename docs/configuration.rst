@@ -112,6 +112,20 @@ simulation method is used, as well as whether disaggregation is used. Defaults
 to ``['temp', 'prec', 'shortwave', 'longwave', 'vapor_pressure', 'red_humid']``.
 For more information about input and output variables see the :ref:`data` page.
 
+``prec_type :: str``: Type of precipitation disaggregation method to use. Can be
+one of the following: ``uniform``, ``triangle``, or ``mix``. Defaults to
+``uniform``.  Capitalization does not matter. Under ``uniform`` method,
+precipitation is disaggregated by dividing uniformly over all sub-daily
+timesteps. Under ``triangle`` the "triangle" method is employed whereby daily
+precipitation is distributed assuming an isosceles triangle shape with peak and
+width determined from two domain variables, ``t_pk`` and ``dur``. For more
+information about the "triangle" method see :doc:`PtriangleMethod.pdf`. Under
+``mix``, the "uniform" method is used on days when ``t_min`` < 0 C, and
+"triangle" is used on all other days; this hybrid method retains the improved
+accuracy of "triangle" in terms of warm season runoff but avoids the biases
+in snow accumulation that the "triangle" method sometimes yields due to fixed
+event timing within the diurnal cycle of temperature.
+
 forcing_vars and state_vars section
 ---------------
 The ``forcing_vars`` and ``state_vars`` sections are where you can specify which variables are in your

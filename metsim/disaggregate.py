@@ -96,8 +96,8 @@ def disaggregate(df_daily: pd.DataFrame, params: dict,
         df_disagg['temp'], df_disagg['vapor_pressure'],
         df_daily['tskc'], params)
 
-    df_disagg['prec'] = prec(df_daily['prec'], ts, params,
-                             df_daily.index.month)
+    df_disagg['prec'] = prec(df_daily['prec'], df_daily['t_min'],
+                             ts, params, df_daily.index.month)
 
     if 'wind' in df_daily:
         df_disagg['wind'] = wind(df_daily['wind'], ts)
@@ -199,7 +199,8 @@ def temp(df_daily: pd.DataFrame, df_disagg: pd.DataFrame,
     return temps
 
 
-def prec(prec: pd.Series, ts: float, params: dict, month_of_year: int):
+def prec(prec: pd.Series, t_min: pd.Series, ts: float, params: dict,
+         month_of_year: int):
 
     """
     Distributes sub-daily precipitation either evenly (uniform) or with a
@@ -213,6 +214,8 @@ def prec(prec: pd.Series, ts: float, params: dict, month_of_year: int):
     ----------
     prec:
         Daily timeseries of precipitation. [mm]
+    t_min:
+        Daily timeseries of minimum daily temperature. [C]
     ts:
         Timestep length to disaggregate down to. [minutes]
     params:
@@ -221,19 +224,24 @@ def prec(prec: pd.Series, ts: float, params: dict, month_of_year: int):
         method to use.
     month_of_year:
         Timeseries of index of month of year
+    do_mix:
+        Boolean indicating whether to fall back to uniform on days when
+        t_min < 0 C.
 
     Returns
     -------
     prec:
         A sub-daily timeseries of precipitation. [mm]
     """
-    def prec_UNIFORM(prec: pd.Series, ts: float, month_of_year: int):
+    def prec_UNIFORM(prec: pd.Series, t_min: pd.Series, ts: float,
+                     month_of_year: int, do_mix: bool):
 
         scale = int(ts) / (cnst.MIN_PER_HOUR * cnst.HOURS_PER_DAY)
         P_return = (prec * scale).resample('{:0.0f}T'.format(ts)).fillna(method='ffill')
         return P_return
 
-    def prec_TRIANGLE(prec: pd.Series, ts: float, month_of_year: int):
+    def prec_TRIANGLE(prec: pd.Series, t_min: pd.Series, ts: float,
+                      month_of_year: int, do_mix: bool):
 
         def P_kernel(t_corners, m, t):
             # calculating precipitation intensity of current time t
@@ -311,6 +319,10 @@ def prec(prec: pd.Series, ts: float, params: dict, month_of_year: int):
         rain_days = np.asarray(np.where(prec > 0))[0]
         if len(rain_days) > 0:
             for d in rain_days:
+                if do_mix and t_min[d] < 0:
+                    i0 = d * steps_per_day
+                    i1 = i0 + steps_per_day
+                    P_return[i0:i1] += prec[d] * 1 / steps_per_day
                 mon = month_of_year[d] - 1
                 if d == 0:
                     # beginning of kernel is clipped;
@@ -337,10 +349,16 @@ def prec(prec: pd.Series, ts: float, params: dict, month_of_year: int):
     prec_function = {
         'UNIFORM': prec_UNIFORM,
         'TRIANGLE': prec_TRIANGLE,
+        'MIX': prec_TRIANGLE,
     }
+    if params['prec_type'].upper() == 'MIX':
+        do_mix = True
+    else:
+        do_mix = False
 
-    P_return = prec_function[params['prec_type'].upper()](prec, ts,
-                                                          month_of_year)
+    P_return = prec_function[params['prec_type'].upper()](prec, t_min, ts,
+                                                          month_of_year,
+                                                          do_mix)
     return P_return
 
 

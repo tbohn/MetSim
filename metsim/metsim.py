@@ -136,6 +136,7 @@ class MetSim(object):
         "rain_scalar": 0.75,
         "tday_coef": 0.45,
         "lapse_rate": 0.0065,
+        "prec_type": 'uniform',
         "iter_dims": ['lat', 'lon'],
         "out_vars": ['temp', 'prec', 'shortwave', 'longwave',
                      'vapor_pressure', 'rel_humid', 'wind', 'air_pressure'],
@@ -308,7 +309,7 @@ class MetSim(object):
                 if not self.domain['mask'].sel(**locs).values > 0:
                     continue
 
-                if self.params['prec_type'].upper() == 'TRIANGLE':
+                if self.params['prec_type'].upper() in ['TRIANGLE', 'MIX']:
                     # add variables for triangle precipitation disgregation
                     # method to parameters
                     self.params['dur'], self.params['t_pk'] = add_prec_tri_vars(self.domain.sel(**locs))
