@@ -173,6 +173,9 @@ The ``domain_vars`` section is where information about the domain file is given.
 Since the domain file is given as a NetCDF file this section has a similar
 format to that of the NetCDF input file format described above.  That is,
 entries should be of the form ``netcdf_varname = metsim_varname``. The minimum
-required variables have ``metsim_varname``s corresponding to ``lat``, ``lon``,
+required variables have ``metsim_varname``\s corresponding to ``lat``, ``lon``,
 ``mask``, and ``elev``; these variable names correspond to latitude, longitude,
-a mask of valid cells in the domain, and the elevation given in meters.
+a mask of valid cells in the domain, and the elevation given in meters. If
+``prec_type`` = ``triangle`` or ``mix``, two additonal variables are required
+including ``dur`` and ``t_pk`` for disaggregating daily precipitation according
+to the "triangle" method.
