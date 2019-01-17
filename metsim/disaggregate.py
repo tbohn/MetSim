@@ -224,9 +224,6 @@ def prec(prec: pd.Series, t_min: pd.Series, ts: float, params: dict,
         method to use.
     month_of_year:
         Timeseries of index of month of year
-    do_mix:
-        Boolean indicating whether to fall back to uniform on days when
-        t_min < 0 C.
 
     Returns
     -------
@@ -319,12 +316,12 @@ def prec(prec: pd.Series, t_min: pd.Series, ts: float, params: dict,
         rain_days = np.asarray(np.where(prec > 0))[0]
         if len(rain_days) > 0:
             for d in rain_days:
+                mon = month_of_year[d] - 1
                 if do_mix and t_min[d] < 0:
                     i0 = d * steps_per_day
                     i1 = i0 + steps_per_day
                     P_return[i0:i1] += prec[d] * 1 / steps_per_day
-                mon = month_of_year[d] - 1
-                if d == 0:
+                elif d == 0:
                     # beginning of kernel is clipped;
                     # rescale so that clipped kernel sums to original total
                     k0 = int(np.ceil(steps_per_day / 2))
